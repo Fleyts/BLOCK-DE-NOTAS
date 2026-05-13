@@ -13,6 +13,61 @@
     --verde2:#c7d7ab;
     --crema:#e5e2cb;
 }
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  onSnapshot,
+  query,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "PEGA AQUI",
+  authDomain: "PEGA AQUI",
+  projectId: "PEGA AQUI",
+  storageBucket: "PEGA AQUI",
+  messagingSenderId: "PEGA AQUI",
+  appId: "PEGA AQUI"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const mensajes = collection(db, "mensajes");
+
+window.enviarMensaje = async function(texto) {
+  await addDoc(mensajes, {
+    texto,
+    fecha: Date.now()
+  });
+};
+
+const q = query(mensajes, orderBy("fecha"));
+
+onSnapshot(q, (snapshot) => {
+  snapshot.docChanges().forEach((change) => {
+    if (change.type === "added") {
+
+      const data = change.doc.data();
+
+      console.log(data.texto);
+
+      if (Notification.permission === "granted") {
+        new Notification("Nuevo mensaje 💌", {
+          body: data.texto
+        });
+      }
+    }
+  });
+});
+
+if (Notification.permission !== "granted") {
+  Notification.requestPermission();
+}
+</script>
 body{
     margin:0;
     font-family:Arial,sans-serif;
