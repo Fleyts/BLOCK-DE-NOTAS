@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌷 Planner Compartido 🌷</title>
+
+<style>
+:root{
+    --rosa:#e7b5be;
+    --rosita:#e6c9cf;
+    --verde:#bccf92;
+    --verde2:#c7d7ab;
+    --crema:#e5e2cb;
+}
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:linear-gradient(135deg,var(--rosa),var(--rosita),var(--verde2));
+}
+.container{width:95%;max-width:1500px;margin:20px auto;}
+h1{text-align:center;color:#6f7f57;font-size:45px;}
+.onlineBox{background:var(--crema);border-radius:20px;padding:15px;margin-bottom:20px;}
+.onlineTitle{text-align:center;color:#6f7f57;}
+#onlineUsers{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;}
+.user{background:var(--rosita);padding:10px 15px;border-radius:15px;color:#6f7f57;font-weight:bold;}
+.calendar{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;}
+.day{background:var(--crema);border-radius:25px;padding:20px;}
+.day h2{text-align:center;color:#6f7f57;}
+textarea{width:100%;height:120px;border:none;border-radius:15px;padding:10px;resize:none;outline:none;}
+button{width:100%;margin-top:10px;padding:10px;border:none;border-radius:15px;background:var(--verde);color:white;cursor:pointer;font-size:16px;}
+button:hover{background:#9ab37a;}
+.people{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:20px;}
+.person{background:var(--rosita);border-radius:20px;padding:10px;}
+.person h3{text-align:center;color:#6f7f57;}
+.jar-top{width:70px;height:15px;background:#97ae6b;border-radius:10px;margin:auto;}
+.jar{width:100px;height:150px;border:5px solid #97ae6b;border-radius:25px;margin:10px auto;overflow:hidden;position:relative;background:white;}
+.jar-fill{position:absolute;bottom:0;width:100%;height:0%;display:flex;justify-content:center;align-items:center;transition:0.4s;font-size:22px;}
+.moods{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;}
+.mood{background:white;padding:6px;border-radius:15px;cursor:pointer;transition:0.3s;}
+.mood:hover{transform:scale(1.08);}
+.floating-img {position: absolute;max-width: 80px;max-height: 80px;pointer-events: none;z-index: 50;transition: transform 1s ease;border-radius: 20%;object-fit: cover;box-shadow: 0 2px 8px rgba(0,0,0,0.15);}
+.page-frame {position: fixed;width: 100%;left: 0;z-index: 10;}
+.frame-top {top: 0;}
+.frame-bottom {bottom: 0;}
+</style>
+</head>
+
+<body>
+<div class="container">
+<h1>🌷 Planner Compartido 🌷</h1>
+<div class="onlineBox">
+<h2 class="onlineTitle">💞 Personas conectadas 💞</h2>
+<div id="onlineUsers"></div>
+</div>
+<div id="calendar" class="calendar"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, onValue, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+/* FIREBASE CONFIG */
+const firebaseConfig = {
+apiKey: "AIzaSyCNOKV90v9BaAjy60HjleZE1Zu8WbZ9v7k",
+authDomain: "block-de-notas-36c33.firebaseapp.com",
+projectId: "block-de-notas-36c33",
+storageBucket: "block-de-notas-36c33.firebasestorage.app",
+messagingSenderId: "544773663987",
+appId: "1:544773663987:web:71b5b93615e1c522235b86"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+/* USUARIO POR LINK */
+let currentUser = new URLSearchParams(window.location.search).get("user");
+if(!currentUser){
+    currentUser = prompt("🌷 Escribe tu nombre: Camila o Stefany");
+}
+if(currentUser !== "Camila" && currentUser !== "Stefany"){
+    alert("❌ Solo Camila o Stefany"); location.reload();
+}
+
+/* ONLINE */
+const onlineRef = ref(db,"online");
+const myRef = ref(db,"online/" + currentUser);
+get(onlineRef).then((snapshot)=>{
+    const data = snapshot.val() || {};
+    if(data[currentUser]){ alert("❌ Ya conectado"); location.reload(); return; }
+    if(Object.keys(data).length >= 2){ alert("❌ Sala llena"); location.reload(); return; }
+    set(myRef,{name: currentUser,time: Date.now()});
+    onDisconnect(myRef).remove();
+});
+
+/* LISTA ONLINE */
+onValue(onlineRef,(snap)=>{
+    const data = snap.val() || {};
+    const div = document.getElementById("onlineUsers");
+    div.innerHTML = "";
+    for(let u in data){ div.innerHTML += `<div class="user">💞 ${u}</div>`; }
+});
+
+/* CALENDARIO */
+const days = ["lunes","martes","miercoles","jueves","viernes","sabado","domingo"];
+const calendar = document.getElementById("calendar");
+
+days.forEach(day=>{
+    calendar.innerHTML += `
+<div class="day">
+<h2>${day.toUpperCase()}</h2>
+<textarea id="${day}" placeholder="¿Qué harán? 💌"></textarea>
+<button onclick="saveTask('${day}')">Guardar 🌷</button>
+<div class="people">
+<div class="person">
+<h3>🩷 Camila</h3>
+<div class="jar-top"></div>
+<div class="jar"><div class="jar-fill" id="jar-${day}-Camila"></div></div>
+<div class="moods">
+<div class="mood" onclick="setMood('${day}','Camila','๑•͈ᴗ•͈๑','#ffe8a3')">๑•͈ᴗ•͈๑</div>
+<div class="mood" onclick="setMood('${day}','Camila','˶ˊᜊˋ˶','#c7dcff')">˶ˊᜊˋ˶</div>
+<div class="mood" onclick="setMood('${day}','Camila','•︡ᯅ•︠','#ffb8b8')">•︡ᯅ•︠</div>
+<div class="mood" onclick="setMood('${day}','Camila','っ ̯ -｡','#cce8d0')">っ ̯ -｡</div>
+</div></div>
+
+<div class="person">
+<h3>🌷 Stefany</h3>
+<div class="jar-top"></div>
+<div class="jar"><div class="jar-fill" id="jar-${day}-Stefany"></div></div>
+<div class="moods">
+<div class="mood" onclick="setMood('${day}','Stefany','๑•͈ᴗ•͈๑','#ffe8a3')">๑•͈ᴗ•͈๑</div>
+<div class="mood" onclick="setMood('${day}','Stefany','˶ˊᜊˋ˶','#c7dcff')">˶ˊᜊˋ˶</div>
+<div class="mood" onclick="setMood('${day}','Stefany','•︡ᯅ•︠','#ffb8b8')">•︡ᯅ•︠</div>
+<div class="mood" onclick="setMood('${day}','Stefany','っ ̯ -｡','#cce8d0')">っ ̯ -｡</div>
+</div></div>
+</div></div>`;
+});
+
+/* TAREAS EN FIREBASE */
+window.saveTask = (day)=>{
+    set(ref(db,"tasks/"+day),document.getElementById(day).value);
+};
+onValue(ref(db,"tasks"),(snap)=>{
+    const data = snap.val() || {};
+    for(let d in data){ if(document.getElementById(d)){ document.getElementById(d).value = data[d]; } }
+});
+
+/* MOODS */
+window.setMood = (day,owner,emoji,color)=>{
+    if(currentUser!==owner){ alert("❌ No puedes cambiar a "+owner); return; }
+    set(ref(db,"moods/"+day+"/"+owner),{emoji,color});
+};
+onValue(ref(db,"moods"),(snap)=>{
+    const data = snap.val()||{};
+    for(let day in data){ for(let person in data[day]){
+        let mood=data[day][person];
+        let jar=document.getElementById(`jar-${day}-${person}`);
+        if(jar){ jar.style.height="100%"; jar.style.background=mood.color; jar.innerHTML=mood.emoji; }
+    }}
+});
+
+/* ==== IMÁGENES FLOTANTES BONITAS ==== */
+const images = ["images1.png","images2.png","images3.png","images5.png"];
+function randomPosition(img){
+    const x=Math.random()*(window.innerWidth-img.width);
+    const y=Math.random()*(window.innerHeight-img.height);
+    img.style.left=x+"px"; img.style.top=y+"px";
+}
+images.forEach((src,index)=>{
+    const img=document.createElement("img");
+    img.src=src; img.className="floating-img";
+    if(index===images.length-1){
+        const topFrame=img.cloneNode(); topFrame.className+=" page-frame frame-top"; document.body.appendChild(topFrame);
+        const bottomFrame=img.cloneNode(); bottomFrame.className+=" page-frame frame-bottom"; document.body.appendChild(bottomFrame);
+    } else {
+        document.body.appendChild(img); randomPosition(img);
+    }
+});
+setInterval(()=>{
+    const floats=document.querySelectorAll(".floating-img:not(.page-frame)");
+    floats.forEach(img=>{
+        const dx=(Math.random()-0.5)*10; const dy=(Math.random()-0.5)*10;
+        img.style.transform=`translate(${dx}px,${dy}px)`;
+    });
+},2000);
+</script>
+</body>
+</html>
