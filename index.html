@@ -215,30 +215,7 @@ onValue(ref(db,"moods"),(snap)=>{
     }}
 });
 
-/* ==== IMÁGENES FLOTANTES BONITAS ==== */
-const images = ["images1.png","images2.png","images3.png","images5.png"];
-function randomPosition(img){
-    const x=Math.random()*(window.innerWidth-img.width);
-    const y=Math.random()*(window.innerHeight-img.height);
-    img.style.left=x+"px"; img.style.top=y+"px";
-}
-images.forEach((src,index)=>{
-    const img=document.createElement("img");
-    img.src=src; img.className="floating-img";
-    if(index===images.length-1){
-        const topFrame=img.cloneNode(); topFrame.className+=" page-frame frame-top"; document.body.appendChild(topFrame);
-        const bottomFrame=img.cloneNode(); bottomFrame.className+=" page-frame frame-bottom"; document.body.appendChild(bottomFrame);
-    } else {
-        document.body.appendChild(img); randomPosition(img);
-    }
-});
-setInterval(()=>{
-    const floats=document.querySelectorAll(".floating-img:not(.page-frame)");
-    floats.forEach(img=>{
-        const dx=(Math.random()-0.5)*10; const dy=(Math.random()-0.5)*10;
-        img.style.transform=`translate(${dx}px,${dy}px)`;
-    });
-},2000);
+
 </script>
 </body>
 </html>
